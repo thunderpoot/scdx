@@ -21,18 +21,22 @@ $ chmod +x scdx
 ### Usage:
 
 ```bash
-scdx --sleep 2 --domain commoncrawl.org --crawls CC-MAIN-2021-04 CC-MAIN-2024-10
+$ scdx --sleep 2 --domain commoncrawl.org --crawls CC-MAIN-2021-04 CC-MAIN-2024-10
 ```
 
 ```bash
-scdx -s 10 -d '*.wikipedia.org' -c CC-MAIN-2023-50
+$ scdx -s 10 -d '*.wikipedia.org' -c CC-MAIN-2023-50
 ```
 
-The program will display a progress bar and output a file with a timestamp (e.g `2024-02-27_18-34-50_output.jsonl`) to the working directory.
+```bash
+$ scdx -l -d apple.com
+```
 
-The default sleep time is 2 seconds. Please be polite! Polling multiple times a second will make the index server sad.
+The program will display a progress bar and output a file with a timestamp (e.g `2024-02-27_18-34-50_output.jsonl`) to the working directory, unless the `-o` or `--output` options are used.
 
-If no crawls are specified, all crawls will be queried.
+The default sleep time is 2 seconds. Please be polite! Polling multiple times a second will make the index server sad. See the CCF system status [here](https://status.commoncrawl.org).
+
+If no crawls are specified, all crawls will be queried. Use the `-l` or `--latest` flag to only query the latest crawl.
 
 The API used supports two methods of wildcarding, like the (more advanced and mature) [cdx-toolkit](https://github.com/cocrawler/cdx_toolkit) by Greg Lindahl.
 
