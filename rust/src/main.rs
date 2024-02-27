@@ -97,7 +97,7 @@ fn main() {
                     },
                     _ => {
                         pb.println(format!("Failed to fetch data for {}. Retrying...", crawl["id"].as_str().unwrap()));
-                        std::thread::sleep(std::time::Duration::from_secs(5));
+                        std::thread::sleep(std::time::Duration::from_secs(sleep_duration));
                     }
                 }
             }

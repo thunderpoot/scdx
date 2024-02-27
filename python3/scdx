@@ -80,6 +80,6 @@ with open(filename, 'w') as outfile:
             else:
                 tqdm.write(f"Failed to fetch data for {crawl['id']}. HTTP status code: {response.status_code}")
                 # Wait before retrying on other errors
-                time.sleep(5)
+                time.sleep(zzz)
 
 tqdm.write(f"Data collection complete. Results saved to {filename}.")
