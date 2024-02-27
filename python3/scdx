@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+
+import argparse
+import requests
+import json
+import time
+import signal
+from tqdm import tqdm
+from datetime import datetime
+
+# Example usage:
+# scdx.py --sleep 2 --domain example.com --crawls CC-MAIN-2021-04 CC-MAIN-2024-10
+
+def ctrlc(sig,frame):
+    print('User cancelled')
+    exit(0)
+
+signal.signal(signal.SIGINT,ctrlc)
+
+parser = argparse.ArgumentParser(description="Crawl data collection script.")
+parser.add_argument("-s", "--sleep", type=int, default=2, help="Sleep duration in seconds.")
+parser.add_argument("-d", "--domain", type=str, required=True, help="Domain to search for.")
+parser.add_argument("-c", "--crawls", nargs='*', help="Specify which crawl(s) to query. Default is all.")
+args = parser.parse_args()
+
+zzz = args.sleep  # sleep duration from command line
+domain = args.domain  # domain to search for from command line
+
+
+# Fetch the JSON data from the specified URL
+collinfo_url = "https://index.commoncrawl.org/collinfo.json"
+response = requests.get(collinfo_url)
+if response.status_code == 200:
+    crawls = response.json()
+else:
+    print("Failed to fetch collinfo.json")
+    exit(1)
+
+# Filter crawls if specific crawl IDs are provided
+if args.crawls:
+    filtered_crawls = [crawl for crawl in crawls if crawl['id'] in args.crawls]
+else:
+    filtered_crawls = crawls
+
+# Generate a filename with the current date and time
+filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_output.jsonl")
+
+# Open the file in write mode
+with open(filename, 'w') as outfile:
+    for crawl in tqdm(filtered_crawls, desc="Processing crawls"):
+        success = False
+        while not success:
+            api_url = f"{crawl['cdx-api']}?url={domain}/*&output=json"
+            tqdm.write(f"Querying: {api_url}")
+
+            response = requests.get(api_url)
+
+            if response.status_code == 200:
+                # Process each line as a separate JSON object
+                try:
+                    data_lines = response.text.strip().split('\n')
+                    for line in data_lines:
+                        if line:
+                            data = json.loads(line)
+                            # Write each record as a new line in the output file
+                            json.dump({"crawl_id": crawl['id'], **data}, outfile)
+                            outfile.write('\n')
+                    success = True
+                    tqdm.write(f"Data for {crawl['id']} written to {filename}")
+                except json.JSONDecodeError as e:
+                    tqdm.write(f"JSON decoding failed: {e}")
+                    # Wait before retrying
+                    time.sleep(zzz)
+            elif response.status_code == 503:
+                tqdm.write(f"Service unavailable for {crawl['id']}, retrying in {zzz} seconds...")
+                time.sleep(zzz)
+            elif response.status_code == 404:
+                tqdm.write(f"No data found for {domain} in {crawl['id']}. HTTP status code: {response.status_code}")
+                break  # Stop retrying for this crawl and move to the next one
+            else:
+                tqdm.write(f"Failed to fetch data for {crawl['id']}. HTTP status code: {response.status_code}")
+                # Wait before retrying on other errors
+                time.sleep(5)
+
+tqdm.write(f"Data collection complete. Results saved to {filename}.")
