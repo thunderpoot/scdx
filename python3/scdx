@@ -17,10 +17,19 @@ def ctrlc(sig,frame):
 
 signal.signal(signal.SIGINT,ctrlc)
 
+# Argument parsing setup
 parser = argparse.ArgumentParser(description="Crawl data collection script.")
 parser.add_argument("-s", "--sleep", type=int, default=2, help="Sleep duration in seconds.")
 parser.add_argument("-d", "--domain", type=str, required=True, help="Domain to search for.")
-parser.add_argument("-c", "--crawls", nargs='*', help="Specify which crawl(s) to query. Default is all.")
+
+# Mutually exclusive group for --latest and --crawls
+group = parser.add_mutually_exclusive_group()
+group.add_argument("-l", "--latest", action="store_true", help="Only check the latest crawl.")
+group.add_argument("-c", "--crawls", nargs='*', help="Specify which crawl(s) to query. Default is all.")
+
+# Output filename argument
+parser.add_argument("-o", "--output", type=str, help="Specify the output filename.")
+
 args = parser.parse_args()
 
 zzz = args.sleep  # sleep duration from command line
@@ -42,8 +51,11 @@ if args.crawls:
 else:
     filtered_crawls = crawls
 
+if args.latest:
+    filtered_crawls = [crawls[0]]  # Select only the first entry which is the latest crawl
+
 # Generate a filename with the current date and time
-filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_output.jsonl")
+filename = args.output if args.output else datetime.now().strftime("%Y-%m-%d_%H-%M-%S_output.jsonl")
 
 # Open the file in write mode
 with open(filename, 'w') as outfile:

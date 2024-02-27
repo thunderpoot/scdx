@@ -41,8 +41,28 @@ fn main() {
                 .multiple(true)
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("latest")
+                .short("l")
+                .long("latest")
+                .help("Check only the latest crawl")
+                .takes_value(false)
+                .conflicts_with("crawls"),
+        )
+        .arg(
+            Arg::with_name("output")
+                .short("o")
+                .long("output")
+                .value_name("FILENAME")
+                .help("Specify the output filename")
+                .takes_value(true),
+        )
         .get_matches();
 
+    let is_latest = matches.is_present("latest");
+    let output_filename = matches.value_of("output").map(|s| s.to_string()).unwrap_or_else(|| {
+        Local::now().format("%Y-%m-%d_%H-%M-%S_output.jsonl").to_string()
+    });
     let sleep_duration = matches.value_of("sleep").unwrap().parse::<u64>().unwrap();
     let domain = matches.value_of("domain").unwrap();
     let crawls: Vec<&str> = matches.values_of("crawls").unwrap_or_default().collect();
@@ -53,14 +73,15 @@ fn main() {
 
     if response.status().is_success() {
         let crawls_data: Vec<Value> = response.json().unwrap();
-        let filtered_crawls: Vec<&Value> = if !crawls.is_empty() {
+        let filtered_crawls: Vec<&Value> = if is_latest {
+            crawls_data.iter().take(1).collect() // Assuming the first one is the latest
+        } else if !crawls.is_empty() {
             crawls_data.iter().filter(|crawl| crawls.contains(&crawl["id"].as_str().unwrap())).collect()
         } else {
             crawls_data.iter().collect()
         };
 
-        let filename = Local::now().format("%Y-%m-%d_%H-%M-%S_output.jsonl").to_string();
-        let mut file = File::create(&filename).unwrap();
+        let mut file = File::create(&output_filename).unwrap();
 
         let pb = ProgressBar::new(filtered_crawls.len() as u64);
         pb.set_style(ProgressStyle::default_bar()
@@ -103,7 +124,7 @@ fn main() {
             }
         }
         pb.finish_with_message("Data collection complete.");
-        println!("Results saved to {}.", filename);
+        println!("Results saved to {}.", output_filename);
     } else {
         println!("Failed to fetch collinfo.json");
     }
