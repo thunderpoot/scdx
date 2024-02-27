@@ -20,15 +20,29 @@ $ chmod +x scdx
 
 ### Usage:
 
-```
+```bash
 scdx --sleep 2 --domain commoncrawl.org --crawls CC-MAIN-2021-04 CC-MAIN-2024-10
 ```
 
-```
-scdx -s 10 -d wikipedia.org -c CC-MAIN-2023-50
+```bash
+scdx -s 10 -d '*.wikipedia.org' -c CC-MAIN-2023-50
 ```
 
+The program will display a progress bar and output a file with a timestamp (e.g `2024-02-27_18-34-50_output.jsonl`) to the working directory.
+
+The default sleep time is 2 seconds. Please be polite! Polling multiple times a second will make the index server sad.
+
 If no crawls are specified, all crawls will be queried.
+
+The API used supports two methods of wildcarding, like the (more advanced and mature) [cdx-toolkit](https://github.com/cocrawler/cdx_toolkit) by Greg Lindahl.
+
+- **Prefixed asterisk**
+
+    The query `*.example.com`, in CDX jargon sets `matchType='domain'`, and will return captures for `blog.example.com`, `support.example.com`, etc.
+
+- **Appended asterisk**
+
+    The query `example.com/*` will return captures for any page on `example.com`.
 
 The Python version uses [`tqdm`](https://tqdm.github.io/) to display a progress bar, and the Rust version uses [`indicatif`](https://docs.rs/indicatif/latest/indicatif/).
 
